@@ -1,0 +1,104 @@
+module TIMER(
+    input clock, // input clock signal
+    input reset, // input reset signal
+    input start, // input start signal
+    output a0, b0, c0, d0, e0, f0, g0, a1, b1, c1, d1, e1, f1, g1, a2, b2, c2, d2, e2, f2, g2, a3, b3, c3, d3, e3, f3, g3
+); // output signals for 7-segment display
+
+reg [3:0] reg_d0, reg_d1, reg_d2, reg_d3; // registers that will hold the individual counts
+// registers that will hold the individual counts
+
+reg [23:0] ticker; // 23 bits needed to count up to 50M bits
+
+wire click; // wire to generate a click signal
+
+always @ (posedge clock or posedge reset) // always block triggered by positive edge of clock or reset signal
+begin
+    if(reset) // if reset signal is high
+        ticker <= 0; // reset ticker to 0
+    else if(ticker == 50000000) // if ticker reaches the desired max value
+        ticker <= 0; // reset ticker to 0
+    else if(start) // if start signal is high
+        ticker <= ticker - 1; // decrement ticker (presumably intended to count down)
+end
+
+assign click = ((ticker == 50000000) ? 1'b1 : 1'b0); // click signal assigned high every 0.1 second
+
+always @ (posedge clock or posedge reset) // always block triggered by positive edge of clock or reset signal
+begin
+    if (reset) // if reset signal is high
+    begin
+        reg_d0 <= 9; // initialize digit 0 to 9
+        reg_d1 <= 9; // initialize digit 1 to 9
+        reg_d2 <= 9; // initialize digit 2 to 9
+reg_d3 <= 9; // initialize digit 3 to 9
+end
+else if (click) // decrement at every click
+begin
+    if(reg_d0 == 0) // xxx9 - the 0.1 second digit
+    begin // if_1
+        reg_d0 <= 9;
+        if (reg_d1 == 0) // xx99
+        begin // if_2
+            reg_d1 <= 9;
+            if (reg_d2 == 0) // x599 - the two digit seconds digits
+            begin // if_3
+                reg_d2 <= 5;
+                if(reg_d3 == 0) // 9599 - The minute digit
+                    reg_d3 <= 9;
+                else
+                    reg_d3 <= reg_d3 - 1;
+            end
+            else // else_3
+                reg_d2 <= reg_d2 - 1;
+        end
+        else // else_2
+            reg_d1 <= reg_d1 - 1;
+    end
+    else // else_1
+        reg_d0 <= reg_d0 - 1;
+end
+end
+
+// 7 segment encoding
+// 0
+// ---
+// 5 | | 1
+// --- <- 6
+// 4 | | 2
+// ---
+// 3
+// through data flow modelling
+// d0
+assign a0 = ~((reg_d0[3]) | (reg_d0[1]) | (reg_d0[2] & reg_d0[0]) | (~reg_d0[2] & ~reg_d0[0])); // a0 segment
+assign b0 = ~((~reg_d0[2]) | (reg_d0[1] & reg_d0[0]) | (~reg_d0[1] & ~reg_d0[0])); // b0 segment
+assign c0 = ~((reg_d0[2]) | (~reg_d0[1]) | (reg_d0[0])); // c0 segment
+assign d0 = ~((reg_d0[3]) | (~reg_d0[2] & ~reg_d0[0]) | (~reg_d0[2] & reg_d0[1]) | (reg_d0[2] & ~reg_d0[1] & reg_d0[0]) | (reg_d0[1] & ~reg_d0[0])); // d0 segment
+assign e0 = ~((~reg_d0[2] & ~reg_d0[0]) | (reg_d0[1] & ~reg_d0[0])); // e0 segment
+assign f0 = ~((reg_d0[3]) | (reg_d0[2] & ~reg_d0[1]) | (reg_d0[2] & ~reg_d0[0]) | (~reg_d0[1] & ~reg_d0[0])); // f0 segment
+assign g0 = ~((reg_d0[3]) | (~reg_d0[2] & reg_d0[1]) | (reg_d0[2] & ~reg_d0[1]) | (reg_d0[2] & ~reg_d0[0])) ; 
+// d1
+assign a1 = ~((reg_d1[3]) | (reg_d1[1]) | (reg_d1[2] & reg_d1[0]) | (~reg_d1[2] & ~reg_d1[0])) ; 
+assign b1 = ~((~reg_d1[2]) | (reg_d1[1] & reg_d1[0]) | (~reg_d1[1] & ~reg_d1[0])) ; 
+assign c1 = ~((reg_d1[2]) | (~reg_d1[1]) | (reg_d1[0])) ; 
+assign d1 = ~((reg_d1[3]) | (~reg_d1[2] & ~reg_d1[0]) | (~reg_d1[2] & reg_d1[1]) | (reg_d1[2] & ~reg_d1[1] & reg_d1[0]) | (reg_d1[1] & ~reg_d1[0])) ; 
+assign e1 = ~((~reg_d1[2] & ~reg_d1[0]) | (reg_d1[1] & ~reg_d1[0])) ; 
+assign f1 = ~((reg_d1[3]) | (reg_d1[2] & ~reg_d1[1]) | (reg_d1[2] & ~reg_d1[0]) | (~reg_d1[1] & ~reg_d1[0])) ; 
+assign g1 = ~((reg_d1[3]) | (~reg_d1[2] & reg_d1[1]) | (reg_d1[2] & ~reg_d1[1]) | (reg_d1[2] & ~reg_d1[0])) ; 
+// d2 
+assign a2 = ~((reg_d2[3]) | (reg_d2[1]) | (reg_d2[2] & reg_d2[0]) | (~reg_d2[2] & ~reg_d2[0])) ; 
+assign b2 = ~((~reg_d2[2]) | (reg_d2[1] & reg_d2[0]) | (~reg_d2[1] & ~reg_d2[0])) ; 
+assign c2 = ~((reg_d2[2]) | (~reg_d2[1]) | (reg_d2[0])) ; 
+assign d2 = ~((reg_d2[3]) | (~reg_d2[2] & ~reg_d2[0]) | (~reg_d2[2] & reg_d2[1]) | (reg_d2[2] & ~reg_d2[1] & reg_d2[0]) | (reg_d2[1] & ~reg_d2[0])) ; 
+assign e2 = ~((~reg_d2[2] & ~reg_d2[0]) | (reg_d2[1] & ~reg_d2[0])) ; 
+assign f2 = ~((reg_d2[3]) | (reg_d2[2] & ~reg_d2[1]) | (reg_d2[2] & ~reg_d2[0]) | (~reg_d2[1] & ~reg_d2[0])) ; 
+assign g2 = ~((reg_d2[3]) | (~reg_d2[2] & reg_d2[1]) | (reg_d2[2] & ~reg_d2[1]) | (reg_d2[2] & ~reg_d2[0])) ; 
+// d3 
+assign a3 = ~((reg_d3[3]) | (reg_d3[1]) | (reg_d3[2] & reg_d3[0]) | (~reg_d3[2] & ~reg_d3[0])) ; 
+assign b3 = ~((~reg_d3[2]) | (reg_d3[1] & reg_d3[0]) | (~reg_d3[1] & ~reg_d3[0])) ; 
+assign c3 = ~((reg_d3[2]) | (~reg_d3[1]) | (reg_d3[0])) ; 
+assign d3 = ~((reg_d3[3]) | (~reg_d3[2] & ~reg_d3[0]) | (~reg_d3[2] & reg_d3[1]) | (reg_d3[2] & ~reg_d3[1] & reg_d3[0]) | (reg_d3[1] & ~reg_d3[0])) ; 
+assign e3 = ~((~reg_d3[2] & ~reg_d3[0]) | (reg_d3[1] & ~reg_d3[0])) ; 
+assign f3 = ~((reg_d3[3]) | (reg_d3[2] & ~reg_d3[1]) | (reg_d3[2] & ~reg_d3[0]) | (~reg_d3[1] & ~reg_d3[0])) ; 
+assign g3 = ~ ((reg_d3[3]) | (~reg_d3[2] & reg_d3[1]) | (reg_d3[2] & ~reg_d3[1]) | (reg_d3[2] & ~reg_d3[0])) ; 
+endmodule
